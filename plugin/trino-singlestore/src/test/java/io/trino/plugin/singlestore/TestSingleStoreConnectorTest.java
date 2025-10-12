@@ -67,11 +67,11 @@ public class TestSingleStoreConnectorTest
     protected boolean hasBehavior(TestingConnectorBehavior connectorBehavior)
     {
         return switch (connectorBehavior) {
-            case SUPPORTS_JOIN_PUSHDOWN -> true;
+            case SUPPORTS_JOIN_PUSHDOWN,
+                 SUPPORTS_COMMENT_ON_COLUMN -> true;
             case SUPPORTS_ADD_COLUMN_WITH_COMMENT,
                  SUPPORTS_AGGREGATION_PUSHDOWN,
                  SUPPORTS_ARRAY,
-                 SUPPORTS_COMMENT_ON_COLUMN,
                  SUPPORTS_COMMENT_ON_TABLE,
                  SUPPORTS_DROP_NOT_NULL_CONSTRAINT,
                  SUPPORTS_CREATE_TABLE_WITH_COLUMN_COMMENT,
@@ -232,20 +232,6 @@ public class TestSingleStoreConnectorTest
     protected String errorMessageForInsertIntoNotNullColumn(String columnName)
     {
         return format(".* Field '%s' doesn't have a default value", columnName);
-    }
-
-    @Test
-    public void testColumnComment()
-    {
-        // TODO add support for setting comments on existing column and replace the test with io.trino.testing.BaseConnectorTest#testCommentColumn
-
-        onRemoteDatabase().execute("CREATE TABLE tpch.test_column_comment (col1 bigint COMMENT 'test comment', col2 bigint COMMENT '', col3 bigint)");
-
-        assertQuery(
-                "SELECT column_name, comment FROM information_schema.columns WHERE table_schema = 'tpch' AND table_name = 'test_column_comment'",
-                "VALUES ('col1', 'test comment'), ('col2', null), ('col3', null)");
-
-        assertUpdate("DROP TABLE test_column_comment");
     }
 
     @Test

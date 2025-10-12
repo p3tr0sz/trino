@@ -77,6 +77,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
+import static com.singlestore.jdbc.DatabaseMetaData.escapeString;
 import static io.airlift.slice.Slices.utf8Slice;
 import static io.trino.plugin.base.util.JsonTypeUtil.jsonParse;
 import static io.trino.plugin.jdbc.DecimalConfig.DecimalMapping.ALLOW_OVERFLOW;
@@ -266,6 +267,17 @@ public class SingleStoreClient
     {
         // Don't return a comment until the connector supports creating tables with comment
         return Optional.empty();
+    }
+
+    @Override
+    public void setColumnComment(ConnectorSession session, JdbcTableHandle handle, JdbcColumnHandle column, Optional<String> comment) {
+        String sql = format(
+                "ALTER TABLE %s MODIFY COLUMN %s %s COMMENT %s",
+                quoted(handle.asPlainTable().getRemoteTableName()),
+                quoted(column.getColumnName()),
+                column.getColumnType().getDisplayName(),
+                singlestoreVarcharLiteral(comment.orElse("")));
+        execute(session, sql);
     }
 
     @Override
@@ -739,5 +751,11 @@ public class SingleStoreClient
                 (resultSet, columnIndex) -> jsonParse(utf8Slice(resultSet.getString(columnIndex))),
                 varcharWriteFunction(),
                 DISABLE_PUSHDOWN);
+    }
+
+    private static String singlestoreVarcharLiteral(String value)
+    {
+        requireNonNull(value, "value is null");
+        return "'" + escapeString(value) + "'";
     }
 }
